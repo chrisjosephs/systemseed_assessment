@@ -4,3 +4,6 @@ application:
     https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js: { external: true, weight: -99 }
     https://unpkg.com/babel-standalone@6.26.0/babel.min.js: { external: true, weight: -98 }
     js/application.js: { minified: true, weight: -97, attributes: { type: "text/babel" } }
+  css:
+    base:
+      css/systemseed_assessment.css: { }

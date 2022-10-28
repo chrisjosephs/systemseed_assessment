@@ -1,0 +1,10 @@
+.todo-list__item label {
+  display: inline-block;
+  padding-left: 1rem;
+  vertical-align: middle;
+  width: calc(100% - 40px);
+}
+.todo-list__item  input {
+  display: inline-block;
+  vertical-align: middle;
+}

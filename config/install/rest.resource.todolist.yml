@@ -1,0 +1,10 @@
+id: todolist
+plugin_id: todo_list_rest_resource
+granularity: method
+configuration:
+  POST:
+    supported_formats:
+      - json
+    supported_auth:
+      - basic_auth
+      - cookie

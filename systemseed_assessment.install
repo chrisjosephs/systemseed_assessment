@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the systemseed module.
+ */
+
+function systemseed_assessment_uninstall() {
+  // Delete old config
+  \Drupal::configFactory()->getEditable('core.entity_form_display.node.todo_checklist.default')->delete();
+  \Drupal::configFactory()->getEditable('core.entity_form_display.paragraph.to_do_item.default')->delete();
+  \Drupal::configFactory()->getEditable('core.entity_view_display.node.todo_checklist.default')->delete();
+  \Drupal::configFactory()->getEditable('core.entity_view_display.node.todo_checklist.teaser')->delete();
+  \Drupal::configFactory()->getEditable('core.entity_view_display.paragraph.to_do_item.default')->delete();
+  \Drupal::configFactory()->getEditable('field.field.node.todo_checklist.field_to_do_list')->delete();
+  \Drupal::configFactory()->getEditable('field.field.paragraph.to_do_item.field_completed')->delete();
+  \Drupal::configFactory()->getEditable('field.field.paragraph.to_do_item.field_label')->delete();
+  \Drupal::configFactory()->getEditable('field.storage.node.field_to_do_list')->delete();
+  \Drupal::configFactory()->getEditable('field.storage.paragraph.field_completed')->delete();
+  \Drupal::configFactory()->getEditable('field.storage.paragraph.field_label')->delete();
+  \Drupal::configFactory()->getEditable('node.type.todo_checklist')->delete();
+  \Drupal::configFactory()->getEditable('paragraphs.paragraphs_type.to_do_item')->delete();
+}
