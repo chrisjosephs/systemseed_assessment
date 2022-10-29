@@ -4,6 +4,9 @@
   vertical-align: middle;
   width: calc(100% - 40px);
 }
+.todo-list__item label p {
+  margin: 0.6rem 0;
+}
 .todo-list__item  input {
   display: inline-block;
   vertical-align: middle;
