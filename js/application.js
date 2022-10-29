@@ -18,25 +18,24 @@ const Application = () => {
   const [todoItems, setTodoItems] = useState(todoList);
   // React hooks to store XCSRF token
   const [csrfToken, setCsrfToken] = useState();
+  // React hooks to check whether fetching (loading/saving)
+  const [fetching, setFetching] = useState('loading');
 
-  // get a REST Session Token asap
+  // get a REST Session Token asap. Also set "fetching" variable
+  // so save can't be triggered until CSRF token is ready
   useEffect(() => {
     const resp = fetch(restSessionTokenPath, {
       method: 'GET',
       mode: 'same-origin',
       cache: 'no-cache',
       credentials: 'same-origin',
-    }).then(response => response.text())
-      .then(data => {
+    }).then(response => response.text()).then(data => {
+      setFetching(false);
       setCsrfToken(data);
-      console.log(data);
     });
-  });
+    // only run if csrfToken not set yet
+  }, [csrfToken]);
 
-  const componentDidMount = () => {
-    console.log("componentWillMount");
-
-  };
   // React to the change event of checkbox of a To-Do item.
   const onCheckboxChange = (event) => {
     // Get value of the paragraph ID from the triggered element.
@@ -54,6 +53,7 @@ const Application = () => {
   };
 
   const sendDrupal = (newTodoItems) => {
+    setFetching(true);
     console.log(newTodoItems);
     let json;
     // convert object to JSON string
@@ -79,46 +79,43 @@ const Application = () => {
         },
         redirect: 'follow', // manual, *follow, error
         referrerPolicy: 'no-referrer', // no-referrer,
-                                       // *no-referrer-when-downgrade, origin,
-                                       // origin-when-cross-origin,
-                                       // same-origin, strict-origin,
-                                       // strict-origin-when-cross-origin,
-                                       // unsafe-url
         body: json, // body data type must match "Content-Type" header
+      }).then(response => response.json()).then(data => {
+        setFetching(false);
+        return(data);
       });
-      console.log(response);
-      return response.json(); // parses JSON response into native JavaScript
-                              // objects
-    }
-  };
+    };
+  }
 
   return (
     <div className="todo-list">
       {todoList.map(item => {
-        return (
-          <div className="todo-list__item" key={item.id}>
-            <input
-              type="checkbox"
-              value={item.id}
-              id={"item-" + item.id}
-              name={"item-" + item.id}
-              className="todo-list__input"
-              checked={todoItems.find(
-                todoItem => todoItem.id === item.id).completed}
-              onChange={onCheckboxChange}
-            />
-            <label
-              htmlFor={"item-" + item.id}
-              className="todo-list__item-label"
-              dangerouslySetInnerHTML={{__html: item.label}}
-            />
-          </div>
-        );
+          return (
+            <div className="todo-list__item" key={item.id}>
+              <input
+                type="checkbox"
+                value={item.id}
+                id={"item-" + item.id}
+                name={"item-" + item.id}
+                className="todo-list__input"
+                checked={todoItems.find(
+                  todoItem => todoItem.id === item.id).completed}
+                onChange={onCheckboxChange}
+                // you can't call another save whilst fetching
+                disabled={fetching !== false}
+              />
+              <label
+                htmlFor={"item-" + item.id}
+                className="todo-list__item-label"
+                dangerouslySetInnerHTML={{__html: item.label}}
+              />
+            </div>
+          );
       })}
-    </div>
-  );
-};
+        </div>
+        );
+      };
 
-// Render react component inside the field's html.
-const root = ReactDOM.createRoot(rootElement);
-root.render(<Application/>);
+      // Render react component inside the field's html.
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<Application/>);
