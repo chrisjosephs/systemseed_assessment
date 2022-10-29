@@ -5,6 +5,7 @@ namespace Drupal\systemseed_assessment\Plugin\rest\resource;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ResourceResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -38,26 +39,36 @@ class TodoListRestResource extends ResourceBase {
     return $instance;
   }
 
-    /**
-     * Responds to POST requests.
-     *
-     * @param string $payload
-     *
-     * @return \Drupal\rest\ModifiedResourceResponse
-     *   The HTTP response object.
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\HttpException
-     *   Throws exception expected.
-     */
-    public function post($payload) {
-
-        // You must to implement the logic of your REST Resource here.
-        // Use current user after pass authentication to validate access.
-        if (!$this->currentUser->hasPermission('access content')) {
-            throw new AccessDeniedHttpException();
-        }
-
-        return new ModifiedResourceResponse($payload, 200);
+  /**
+   * Responds to POST requests.
+   *
+   * @param Request $request
+   *
+   * @return \Drupal\rest\ModifiedResourceResponse
+   *   The HTTP response object.
+   */
+  public function post(request $request): ModifiedResourceResponse
+  {
+    // You must to implement the logic of your REST Resource here.
+    // Use current user after pass authentication to validate access.
+    if ($this->currentUser->isAuthenticated() &&
+      !$this->currentUser->hasPermission('access content')) {
+      throw new AccessDeniedHttpException();
     }
+    if($json = $request->getContent()){
+      $array = json_decode($json, TRUE);
+      if($array){
 
+      }
+      else{
+        throw new \JsonException();
+      }
+    }
+    return new ModifiedResourceResponse($data = "hello", 200);
+  }
+  /** * {@inheritdoc} */
+  public function permissions(): array
+  {
+    return [];
+  }
 }
