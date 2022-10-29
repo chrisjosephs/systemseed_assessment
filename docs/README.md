@@ -31,9 +31,9 @@ Styling: so we could have the js bring in the styling or drupal bring in the sty
 
 I added "systemseed_assement.install" for uninstall function so I can test uninstalling and reinstalling the module, with hook to remove the old config first so no conflict reinstalling it
 
-Observations:
+<h2>Observations:</h2>
 
-The todo list does not have a character cap (therefore tested one item with something like 4000 chars just to see what happens: only real prob is it can be so long when the checkbox is vertically aligned to the center of it then you would have to scroll further down the screen  to even see the checkbox)
+The todo list label does not have a character cap (therefore tested one item with something like 4000 chars just to see what happens: only real prob is it can be so long when the checkbox is vertically aligned to the center of it then you would have to scroll further down the screen  to even see the checkbox)
 
 Added item to test html tags are not rendered as Drupal states on the admin > content > edit paragraph page, even with the dangerouslysetinnerhtml in the application.js renderer, and this is ok you just see the unparsed < tags /> as expected
 
