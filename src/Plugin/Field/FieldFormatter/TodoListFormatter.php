@@ -48,6 +48,7 @@ class TodoListFormatter extends FormatterBase {
       $label = $paragraph->get('field_label')->first()->getValue();
 
       $todo_list[] = [
+        'nid' => $paragraph->getParentEntity()->id(),
         'id' => (int) $paragraph->id(),
         'completed' => (bool) $completed,
         'label' => !empty($label) ? check_markup($label['value'], $label['format']) : '',
