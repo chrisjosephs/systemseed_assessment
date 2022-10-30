@@ -20,4 +20,5 @@ function systemseed_assessment_uninstall() {
   \Drupal::configFactory()->getEditable('field.storage.paragraph.field_label')->delete();
   \Drupal::configFactory()->getEditable('node.type.todo_checklist')->delete();
   \Drupal::configFactory()->getEditable('paragraphs.paragraphs_type.to_do_item')->delete();
+  \Drupal::configFactory()->getEditable('rest.resource.todolist')->delete();
 }
