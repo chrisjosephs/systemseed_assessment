@@ -2,10 +2,12 @@
   display: inline-block;
   padding-left: 1rem;
   vertical-align: middle;
+  /* multiline text label keep inline */
   width: calc(100% - 40px);
 }
-.todo-list__item label p {
-  margin: 0.6rem 0;
+.todo-list__item label p:first-of-type {
+  /* default p has 1.2em bottom so need top to keep v center */
+  padding: 1.2em 0 0;
 }
 .todo-list__item  input {
   display: inline-block;
