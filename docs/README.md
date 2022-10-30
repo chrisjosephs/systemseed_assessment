@@ -1,12 +1,19 @@
 <h2>Additions:</h2>
-Async protection to prevent user being able to submit new checkbox saves before current save is complete: you cannot cause a race condition clicking and unclicking multiple checkboxes which could async in the wrong order, since during the POST request to save the todolist, I made the checkbox inputs disabled until the save is complete
+Async protection to prevent user being able to submit new checkbox saves before current save is complete: you cannot cause a race condition clicking and unclicking a checkbox too quickly which could async in the wrong order, since during the POST request to save the todolist, I made the checkbox input disabled whilst a save is taking place.
+
+It will also disable checkbox clicks until the xcsrf session header has been grabbed (which is the first thing that happens) as you need for this auth to save
 
 Invalidate cache tags upon save todolistitem so page refresh will show changes immediately
 
+Anonymous users will not be able to alter checkboxes, but can still see content as far as the default config is concerned (though where this module is installed might say different, and that has been accounted for to satisfy "- Permission to modify state of To-Do items (not the node!) should be given only to the users who have access to view the checklist" part of spec).
+
+Similarly POSTing as unauthenticated user, will 401 forbidden on the backend.
+
+This was done from "cookie" authentication method since the user would be logged into drupal already to access the application jsx.
 
 <h2>Log:</h2>
 <li>
-set up environment - minimal.  can just use valet for this, not docker image for this as no target environment reqs to match local environment to given (apart from D9)
+set up environment - minimal.  can just use valet for this, not docker image for this as no target environment reqs to match local environment to given (apart from D9).. hmm I could have used same image in the .circleci but didn't look at that until later, so I just matched the php version and cli
 </li>
 <li>install admin theme, claro nicer and less buggy than adminimal now, gin nice for users but not so clinical for devs</li>
 <li>drush theme:enable claro</li>
@@ -41,13 +48,9 @@ Configured Rest resource payload to be a request object, as the template created
 
 Moving back to application.js code, added X-CSRF token fetcher needed for any fetch request.
 
-See gitlog of my own repo I created to track rest of work prior to creating patch to submit (https://github.com/chrisjosephs/systemseed_assessment/commits?author=chrisjosephs):
+See gitlog of my own repo I created to track rest of work prior to creating patch to submit (https://github.com/chrisjosephs/systemseed_assessment/commits?author=chrisjosephs), well I put that private now because I realised you probably don't want anyone else finding it and cheating, although "SystemSeed" isn't a collaborator I can add, so you will have to ask me with a github Username if you want to see that.
 
-Parsed todolist items to json.
-
-Prepared async fetch POST request, and added x-csrf token to headers
-
-get the nid from the parent entity of the todoitem paragraph
+Ran code sniffer.  And circle ci test.
 
 <h2>Observations:</h2>
 

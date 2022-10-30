@@ -19,22 +19,25 @@ const Application = () => {
   // React hooks to store XCSRF token
   const [csrfToken, setCsrfToken] = useState();
   // React hooks to check whether fetching (loading/saving)
-  const [fetching, setFetching] = useState('loading');
+  const [fetching, setFetching] = useState();
+  // React hooks to check whether currently saving todoItem
+  // to prevent race condition possibility of being clicked multiple times before saved
+  const [savingItem, setSavingItem] = useState([]);
 
   // get a REST Session Token asap. Also set "fetching" variable
   // so save can't be triggered until CSRF token is ready
   useEffect(() => {
+    setFetching(true);
     const resp = fetch(restSessionTokenPath, {
       method: 'GET',
       mode: 'same-origin',
       cache: 'no-cache',
       credentials: 'same-origin',
     }).then(response => response.text()).then(data => {
-      setFetching(false);
       setCsrfToken(data);
+      setFetching(false);
     });
-    // only run if csrfToken not set yet
-  }, [csrfToken]);
+  }, []);
 
   // React to the change event of checkbox of a To-Do item.
   const onCheckboxChange = (event) => {
@@ -49,12 +52,12 @@ const Application = () => {
     newTodoItems[itemIndex].completed = event.target.checked;
     setTodoItems(newTodoItems);
     // Send To-Do *item* update to Drupal API. Have avoided race conditions
-    // so you can only ever update one item at a time also
+    // on same item, therefore best to do single items in parallel if user wishes
     sendDrupal(newTodoItems[itemIndex]);
   };
 
   const sendDrupal = (newTodoItem) => {
-    setFetching(true);
+    setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: true }));
     let json;
     // convert object to JSON string
     try {
@@ -80,12 +83,11 @@ const Application = () => {
         referrerPolicy: 'no-referrer', // no-referrer,
         body: json, // body data type must match "Content-Type" header
       }).then(response => response.json()).then(data => {
-        setFetching(false);
-        return (data);
+        setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: false }));
+        return(data);
       });
     };
-  };
-  console.log(todoList);
+  }
   return (
     <div className="todo-list">
       {todoList.map(item => {
@@ -100,8 +102,11 @@ const Application = () => {
               checked={todoItems.find(
                 todoItem => todoItem.id === item.id).completed}
               onChange={onCheckboxChange}
-              // you can't call another save whilst fetching
-              disabled={fetching !== false}
+              // You can't save any item whilst still fetching session token
+              // And can't call another save of same item whilst still POSTing
+              // Also "permission to modify state of To-Do items (not the node!) should
+              // be given only to the users who have access to view the checklist."
+              disabled={(fetching !== false) || (savingItem[item.id]  === true) || item.disabled === true }
             />
             <label
               htmlFor={"item-" + item.id}

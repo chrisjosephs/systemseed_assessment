@@ -52,6 +52,11 @@ class TodoListFormatter extends FormatterBase {
         'id' => (int) $paragraph->id(),
         'completed' => (bool) $completed,
         'label' => !empty($label) ? check_markup($label['value'], $label['format']) : '',
+        // Actually this might be ott: since you wouldn't be able to view it,
+        // nevertheless I have disabled the checkbox on the jsx if no access.
+        'disabled' => !(\Drupal::currentUser()->isAuthenticated() &&
+          $paragraph->getParentEntity()->access('view', \Drupal::currentUser())
+        ),
       ];
     }
 

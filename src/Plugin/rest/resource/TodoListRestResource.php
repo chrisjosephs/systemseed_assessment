@@ -72,10 +72,10 @@ class TodoListRestResource extends ResourceBase {
         $this->updateTodoItem($array);
       }
       catch (InvalidPluginDefinitionException | PluginNotFoundException | EntityStorageException $e) {
-        throw new HttpException(500, 'Internal Server Error', $e);
+        throw new HttpException(500, 'Entity saving exception.');
       }
     }
-    return new ModifiedResourceResponse($data = "Success", 200);
+    return new ModifiedResourceResponse("Success", 200);
   }
 
   /**
