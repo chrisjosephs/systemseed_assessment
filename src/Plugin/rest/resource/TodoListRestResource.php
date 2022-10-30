@@ -8,10 +8,9 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\node\Entity\Node;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
-use Drupal\rest\ResourceResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Provides a resource to get view modes by entity and bundle.
@@ -46,17 +45,17 @@ class TodoListRestResource extends ResourceBase {
   /**
    * Responds to POST requests.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   HTTP request object with body containing ToDoItem data.
    *
    * @return \Drupal\rest\ModifiedResourceResponse
    *   The HTTP response object.
    */
-  public function post(request $request): ModifiedResourceResponse
-  {
-    if (!$this->currentUser->isAuthenticated() ) {
+  public function post(Request $request): ModifiedResourceResponse {
+    if (!$this->currentUser->isAuthenticated()) {
       return new ModifiedResourceResponse("User not logged in.", 401);
     }
-    if($json = $request->getContent()){
+    if ($json = $request->getContent()) {
       try {
         $array = json_decode($json, TRUE);
       }
@@ -64,37 +63,43 @@ class TodoListRestResource extends ResourceBase {
         return new ModifiedResourceResponse($exception->getMessage(), 400);
       }
       $node = Node::load($array['nid']);
-      // Permission to modify state of To-Do items (not the node!) should be given only to the users who have access to view the checklist
+      // Permission to modify state of To-Do items (not the node!) should
+      // be given only to the users who have access to view the checklist.
       if (!($node->access('view', $this->currentUser))) {
         return new ModifiedResourceResponse("User does not have access to view the checklist", 403);
       }
       try {
         $this->updateTodoItem($array);
-      } catch (InvalidPluginDefinitionException  | PluginNotFoundException | EntityStorageException $e ) {
-        return new ModifiedResourceResponse($data = "Error", 500);
+      }
+      catch (InvalidPluginDefinitionException | PluginNotFoundException | EntityStorageException $e) {
+        throw new HttpException(500, 'Internal Server Error', $e);
       }
     }
     return new ModifiedResourceResponse($data = "Success", 200);
   }
 
   /**
+   * Update ToDoItem paragraphs with new data.
+   *
    * @throws \Drupal\Core\Entity\EntityStorageException
-   * @throws InvalidPluginDefinitionException
-   * @throws PluginNotFoundException
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function updateTodoItem($todoItem){
+  public function updateTodoItem($todoItem) {
     $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
-    $todoItemParagraph->set('field_completed', $todoItem->completed ? 1 : 0);
+    $todoItemParagraph->set('field_completed', $todoItem['completed'] ? '1' : '0');
     $todoItemParagraph->save();
-    print_r($this);
-    /**
-     * Cache::invalidateTags(['paragraph:' . $par->id()]);
-       Cache::invalidateTags(['node:' . $node->id()]);
-     */
+    \Drupal::service('cache_tags.invalidator')
+      ->invalidateTags(['paragraph:' . $todoItem['id']]);
+    \Drupal::service('cache_tags.invalidator')
+      ->invalidateTags(['node:' . $todoItem['nid']]);
   }
-  /** * {@inheritdoc} */
-  public function permissions(): array
-  {
+
+  /**
+   * {@inheritDoc}
+   */
+  public function permissions(): array {
     return [];
   }
+
 }
