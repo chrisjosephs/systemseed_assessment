@@ -2,6 +2,10 @@
 
 namespace Drupal\systemseed_assessment\Plugin\rest\resource;
 
+use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\node\Entity\Node;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ResourceResponse;
@@ -49,22 +53,44 @@ class TodoListRestResource extends ResourceBase {
    */
   public function post(request $request): ModifiedResourceResponse
   {
-    // You must to implement the logic of your REST Resource here.
-    // Use current user after pass authentication to validate access.
-    if ($this->currentUser->isAuthenticated() &&
-      !$this->currentUser->hasPermission('access content')) {
-      throw new AccessDeniedHttpException();
+    if (!$this->currentUser->isAuthenticated() ) {
+      return new ModifiedResourceResponse("User not logged in.", 401);
     }
     if($json = $request->getContent()){
-      $array = json_decode($json, TRUE);
-      if($array){
-
+      try {
+        $array = json_decode($json, TRUE);
       }
-      else{
-        throw new \JsonException();
+      catch (\JsonException $exception) {
+        return new ModifiedResourceResponse($exception->getMessage(), 400);
+      }
+      $node = Node::load($array['nid']);
+      // Permission to modify state of To-Do items (not the node!) should be given only to the users who have access to view the checklist
+      if (!($node->access('view', $this->currentUser))) {
+        return new ModifiedResourceResponse("User does not have access to view the checklist", 403);
+      }
+      try {
+        $this->updateTodoItem($array);
+      } catch (InvalidPluginDefinitionException  | PluginNotFoundException | EntityStorageException $e ) {
+        return new ModifiedResourceResponse($data = "Error", 500);
       }
     }
-    return new ModifiedResourceResponse($data = "hello", 200);
+    return new ModifiedResourceResponse($data = "Success", 200);
+  }
+
+  /**
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws InvalidPluginDefinitionException
+   * @throws PluginNotFoundException
+   */
+  public function updateTodoItem($todoItem){
+    $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
+    $todoItemParagraph->set('field_completed', $todoItem->completed ? 1 : 0);
+    $todoItemParagraph->save();
+    print_r($this);
+    /**
+     * Cache::invalidateTags(['paragraph:' . $par->id()]);
+       Cache::invalidateTags(['node:' . $node->id()]);
+     */
   }
   /** * {@inheritdoc} */
   public function permissions(): array

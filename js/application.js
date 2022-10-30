@@ -48,17 +48,17 @@ const Application = () => {
     // Update state of the To-Do item.
     newTodoItems[itemIndex].completed = event.target.checked;
     setTodoItems(newTodoItems);
-    // Send To-Do item update to Drupal API
-    sendDrupal(newTodoItems);
+    // Send To-Do *item* update to Drupal API. Have avoided race conditions
+    // so you can only ever update one item at a time also
+    sendDrupal(newTodoItems[itemIndex]);
   };
 
-  const sendDrupal = (newTodoItems) => {
+  const sendDrupal = (newTodoItem) => {
     setFetching(true);
-    console.log(newTodoItems);
     let json;
     // convert object to JSON string
     try {
-      json = JSON.stringify(newTodoItems);
+      json = JSON.stringify(newTodoItem);
     }
     catch (e) {
       console.log(e);// you can get error here
@@ -68,10 +68,9 @@ const Application = () => {
     // sent to API
     async function postData() {
       const response = await fetch(restApiPath, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-        mode: 'same-origin', // no-cors, *cors, same-origin
-        cache: 'no-cache', // *default, no-cache, reload, force-cache,
-                           // only-if-cached
+        method: 'POST',
+        mode: 'same-origin',
+        cache: 'no-cache',
         credentials: 'same-origin', // include, *same-origin, omit
         headers: {
           'Content-Type': 'application/json',
@@ -82,40 +81,40 @@ const Application = () => {
         body: json, // body data type must match "Content-Type" header
       }).then(response => response.json()).then(data => {
         setFetching(false);
-        return(data);
+        return (data);
       });
     };
-  }
-
+  };
+  console.log(todoList);
   return (
     <div className="todo-list">
       {todoList.map(item => {
-          return (
-            <div className="todo-list__item" key={item.id}>
-              <input
-                type="checkbox"
-                value={item.id}
-                id={"item-" + item.id}
-                name={"item-" + item.id}
-                className="todo-list__input"
-                checked={todoItems.find(
-                  todoItem => todoItem.id === item.id).completed}
-                onChange={onCheckboxChange}
-                // you can't call another save whilst fetching
-                disabled={fetching !== false}
-              />
-              <label
-                htmlFor={"item-" + item.id}
-                className="todo-list__item-label"
-                dangerouslySetInnerHTML={{__html: item.label}}
-              />
-            </div>
-          );
-      })}
-        </div>
+        return (
+          <div className="todo-list__item" key={item.id}>
+            <input
+              type="checkbox"
+              value={item.id}
+              id={"item-" + item.id}
+              name={"item-" + item.id}
+              className="todo-list__input"
+              checked={todoItems.find(
+                todoItem => todoItem.id === item.id).completed}
+              onChange={onCheckboxChange}
+              // you can't call another save whilst fetching
+              disabled={fetching !== false}
+            />
+            <label
+              htmlFor={"item-" + item.id}
+              className="todo-list__item-label"
+              dangerouslySetInnerHTML={{__html: item.label}}
+            />
+          </div>
         );
-      };
+      })}
+    </div>
+  );
+};
 
-      // Render react component inside the field's html.
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(<Application/>);
+// Render react component inside the field's html.
+const root = ReactDOM.createRoot(rootElement);
+root.render(<Application/>);
