@@ -54,6 +54,7 @@ class TodoListFormatter extends FormatterBase {
         'label' => !empty($label) ? check_markup($label['value'], $label['format']) : '',
         // Actually this might be ott: since you wouldn't be able to view it,
         // nevertheless I have disabled the checkbox on the jsx if no access.
+        // The task says based on whether you can "view" node, not "update".
         'disabled' => !(\Drupal::currentUser()->isAuthenticated() &&
           $paragraph->getParentEntity()->access('view', \Drupal::currentUser())
         ),
@@ -66,6 +67,7 @@ class TodoListFormatter extends FormatterBase {
       '#attributes' => [
         'id' => 'todo-list',
         'data-todo-list' => Json::encode($todo_list),
+        'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE,
       ],
       '#attached' => [
         'library' => ['systemseed_assessment/application'],

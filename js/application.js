@@ -6,6 +6,8 @@ const {useState, useEffect} = React;
 const rootElement = document.getElementById('todo-list');
 // Get json data with field content from Drupal.
 const todoList = JSON.parse(rootElement.dataset.todoList) || [];
+// Get whether user authenticated
+const authenticated = rootElement.dataset.authenticated === 'true';
 // Drupal rest session token path
 const restSessionTokenPath = '/session/token';
 // Drupal rest resource API path
@@ -90,6 +92,8 @@ const Application = () => {
   }
   return (
     <div className="todo-list">
+      { // I added authorisation check
+        !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able to save changes...</h3> : '' }
       {todoList.map(item => {
         return (
           <div className="todo-list__item" key={item.id}>

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install, update and uninstall functions for the systemseed module.
+ * Install, update and uninstall functions for the systemseed_assessment module.
  */
 
 function systemseed_assessment_uninstall() {
