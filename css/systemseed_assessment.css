@@ -5,10 +5,6 @@
   /* multiline text label: keep inline on all screen resolutions */
   width: calc(100% - 40px);
 }
-.todo-list__item label p:first-of-type {
-  /* default p has 1.2em bottom so need top to keep v center */
-  padding: 1.2em 0 0;
-}
 .todo-list__item  input {
   display: inline-block;
   vertical-align: middle;

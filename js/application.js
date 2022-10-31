@@ -52,49 +52,66 @@ const Application = () => {
     const itemIndex = todoItems.findIndex(todoItem => todoItem.id === id);
     // Deep clone the array to make sure that we don't drag our changes
     // to the mutable array with state.
-    const newTodoItems = [...todoItems];
+    let newTodoItems = [...todoItems];
     // Update state of the To-Do item.
     newTodoItems[itemIndex].completed = event.target.checked;
     setTodoItems(newTodoItems);
     // Send To-Do *item* update to Drupal API. Have avoided race conditions
     // on same item, therefore can also do single items in parallel if user
     // wishes
-    sendDrupal(newTodoItems[itemIndex]);
+    sendDrupal(newTodoItems[itemIndex]).catch((e) => {
+      // roll back if save fails
+      let newTodoItems = [...todoItems];
+      newTodoItems[itemIndex].completed = !event.target.checked;
+      setTodoItems(newTodoItems);
+    });
   };
 
   const sendDrupal = (newTodoItem) => {
-    setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
-    let json;
-    // convert object to JSON string
-    try {
-      json = JSON.stringify(newTodoItem);
-    }
-    catch (e) {
-      console.log(e);// you can get error here
-    }
-    patchData(newTodoItem['id']);
-
-    // send to API
-    async function patchData(id) {
-      await fetch(restApiPathToDoItem + newTodoItem['id'], {
-        method: 'PATCH',
-        mode: 'same-origin',
-        cache: 'no-cache',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
-        redirect: 'follow',
-        referrerPolicy: 'no-referrer',
-        body: json,
-      }).then(response => response.json()).then(data => {
-        setSavingItem(
-          (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
-        return (data);
+    return new Promise(function (resolve, reject) {
+      setSavingItem(
+        (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
+      let json;
+      // convert object to JSON string
+      try {
+        json = JSON.stringify(newTodoItem);
+      }
+      catch (e) {
+        reject(Error(e));
+      }
+      patchData(newTodoItem['id']).catch((e) => {
+        reject(Error(e));
       });
-    };
-  };
+
+      // send to API
+      async function patchData(id) {
+        try {
+          await fetch(restApiPathToDoItem + newTodoItem['id'], {
+            method: 'PATCH',
+            mode: 'same-origin',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer',
+            body: json,
+          }).then(response => response.json()).then(data => {
+            return (data);
+          });
+        }
+        catch (e) {
+          reject(Error(e));
+        }
+        finally  {
+          setSavingItem(
+            (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
+        }
+      }
+    });
+  }
   return (
     <div className="todo-list">
       { // I added authorisation check though not mandatory
@@ -113,7 +130,7 @@ const Application = () => {
                 todoItem => todoItem.id === item.id).completed}
               onChange={onCheckboxChange}
               // You can't save any item whilst still fetching session token
-              // And can't call another save of same item whilst still POSTing
+              // And can't call another save of same item while save PATCH/POST
               // Also "permission to modify state of To-Do items (not the
               // node!) should be given only to the users who have access to
               // view the checklist."
