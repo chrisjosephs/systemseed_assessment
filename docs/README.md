@@ -1,5 +1,5 @@
 <h2>Additions:</h2>
-Async protection to prevent user being able to submit new checkbox saves before current save is complete: you cannot cause a race condition clicking and unclicking a checkbox too quickly which could async in the wrong order, since during the POST request to save the todolist, I made the checkbox input disabled whilst a save is taking place.
+Async protection to prevent user being able to submit new checkbox saves before current save is complete: you cannot cause a race condition clicking and unclicking a checkbox too quickly which could async in the wrong order, since during the POST/PATCH request to save the todolist, I made the checkbox input disabled whilst a save is taking place.
 
 It will also disable checkbox clicks until the xcsrf session header has been grabbed (which is the first thing that happens) as you need for this auth to save
 
@@ -7,7 +7,7 @@ Invalidate cache tags upon save todolistitem so page refresh will show changes i
 
 Anonymous users will not be able to alter checkboxes, but can still see content as far as the default config is concerned (though where this module is installed might say different, and that has been accounted for to satisfy "- Permission to modify state of To-Do items (not the node!) should be given only to the users who have access to view the checklist" part of spec).
 
-Similarly POSTing as unauthenticated user, will 401 forbidden on the backend.
+Similarly PATCHing as unauthenticated user, will 401 forbidden on the backend.
 
 This was done from "cookie" authentication method since the user would be logged into drupal already to access the application jsx.
 

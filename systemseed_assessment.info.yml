@@ -13,4 +13,3 @@ dependencies:
   - drupal:rest
   - drupal:views
   - drupal:basic_auth
-  - drupal:hal

@@ -8,9 +8,9 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\node\Entity\Node;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
+use Drupal\rest\ResourceResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Provides a resource to get view modes by entity and bundle.
@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *   id = "todo_list_rest_resource",
  *   label = @Translation("Todo list rest resource"),
  *   uri_paths = {
- *     "create" = "/api/todolist"
+ *     "canonical" = "/api/todolist/{entity}"
  *   }
  * )
  */
@@ -43,15 +43,15 @@ class TodoListRestResource extends ResourceBase {
   }
 
   /**
-   * Responds to POST requests.
+   * Responds to PATCH requests.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   HTTP request object with body containing ToDoItem data.
    *
-   * @return \Drupal\rest\ModifiedResourceResponse
+   * @return \Drupal\rest\ModifiedResourceResponse|\Drupal\rest\ResourceResponse
    *   The HTTP response object.
    */
-  public function post(Request $request): ModifiedResourceResponse {
+  public function patch(Request $request) {
     if (!$this->currentUser->isAuthenticated()) {
       return new ModifiedResourceResponse("User not logged in.", 401);
     }
@@ -66,13 +66,14 @@ class TodoListRestResource extends ResourceBase {
       // Permission to modify state of To-Do items (not the node!) should
       // be given only to the users who have access to view the checklist.
       if (!($node->access('view', $this->currentUser))) {
-        return new ModifiedResourceResponse("User does not have access to view the checklist", 403);
+        return new ResourceResponse("User does not have access to view the checklist", 403);
       }
       try {
         $this->updateTodoItem($array);
       }
       catch (InvalidPluginDefinitionException | PluginNotFoundException | EntityStorageException $e) {
-        throw new HttpException(500, 'Entity saving exception.');
+        $this->logger->error($e->getMessage());
+        return new ModifiedResourceResponse("Entity saving exception.", 500);
       }
     }
     return new ModifiedResourceResponse("Success", 200);
@@ -89,6 +90,8 @@ class TodoListRestResource extends ResourceBase {
     $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
     $todoItemParagraph->set('field_completed', $todoItem['completed'] ? '1' : '0');
     $todoItemParagraph->save();
+    // This might be far too verbose IRL, but added for completeness:
+    $this->logger->notice('Updated todoItem with ID %id.', ['%id' => $todoItem['id']]);
     \Drupal::service('cache_tags.invalidator')
       ->invalidateTags(['paragraph:' . $todoItem['id']]);
     \Drupal::service('cache_tags.invalidator')

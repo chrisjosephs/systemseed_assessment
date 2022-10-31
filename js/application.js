@@ -11,7 +11,7 @@ const authenticated = rootElement.dataset.authenticated === 'true';
 // Drupal rest session token path
 const restSessionTokenPath = '/session/token';
 // Drupal rest resource API path
-const restApiPath = '/api/todolist';
+const restApiPathToDoItem = '/api/todolist/';
 
 // This is JSX Component for the whole To-Do List application.
 const Application = () => {
@@ -23,7 +23,8 @@ const Application = () => {
   // React hooks to check whether fetching (loading/saving)
   const [fetching, setFetching] = useState();
   // React hooks to check whether currently saving todoItem
-  // to prevent race condition possibility of being clicked multiple times before saved
+  // to prevent race condition possibility of being clicked multiple times
+  // before saved
   const [savingItem, setSavingItem] = useState([]);
 
   // get a REST Session Token asap. Also set "fetching" variable
@@ -38,6 +39,8 @@ const Application = () => {
     }).then(response => response.text()).then(data => {
       setCsrfToken(data);
       setFetching(false);
+    }).catch(e => {
+      console.log(e);
     });
   }, []);
 
@@ -54,12 +57,13 @@ const Application = () => {
     newTodoItems[itemIndex].completed = event.target.checked;
     setTodoItems(newTodoItems);
     // Send To-Do *item* update to Drupal API. Have avoided race conditions
-    // on same item, therefore best to do single items in parallel if user wishes
+    // on same item, therefore can also do single items in parallel if user
+    // wishes
     sendDrupal(newTodoItems[itemIndex]);
   };
 
   const sendDrupal = (newTodoItem) => {
-    setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: true }));
+    setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
     let json;
     // convert object to JSON string
     try {
@@ -68,32 +72,34 @@ const Application = () => {
     catch (e) {
       console.log(e);// you can get error here
     }
-    postData();
+    patchData(newTodoItem['id']);
 
-    // sent to API
-    async function postData() {
-      const response = await fetch(restApiPath, {
-        method: 'POST',
+    // send to API
+    async function patchData(id) {
+      await fetch(restApiPathToDoItem + newTodoItem['id'], {
+        method: 'PATCH',
         mode: 'same-origin',
         cache: 'no-cache',
-        credentials: 'same-origin', // include, *same-origin, omit
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
-        redirect: 'follow', // manual, *follow, error
-        referrerPolicy: 'no-referrer', // no-referrer,
-        body: json, // body data type must match "Content-Type" header
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        body: json,
       }).then(response => response.json()).then(data => {
-        setSavingItem((savingItem) => ({...savingItem, [newTodoItem['id']]: false }));
-        return(data);
+        setSavingItem(
+          (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
+        return (data);
       });
     };
-  }
+  };
   return (
     <div className="todo-list">
-      { // I added authorisation check
-        !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able to save changes...</h3> : '' }
+      { // I added authorisation check though not mandatory
+        !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able to
+          save changes...</h3> : ''}
       {todoList.map(item => {
         return (
           <div className="todo-list__item" key={item.id}>
@@ -108,9 +114,11 @@ const Application = () => {
               onChange={onCheckboxChange}
               // You can't save any item whilst still fetching session token
               // And can't call another save of same item whilst still POSTing
-              // Also "permission to modify state of To-Do items (not the node!) should
-              // be given only to the users who have access to view the checklist."
-              disabled={(fetching !== false) || (savingItem[item.id]  === true) || item.disabled === true }
+              // Also "permission to modify state of To-Do items (not the
+              // node!) should be given only to the users who have access to
+              // view the checklist."
+              disabled={(fetching !== false) ||
+                (savingItem[item.id] === true) || item.disabled === true}
             />
             <label
               htmlFor={"item-" + item.id}
