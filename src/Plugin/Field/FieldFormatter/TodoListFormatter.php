@@ -24,7 +24,13 @@ class TodoListFormatter extends FormatterBase {
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
     $todo_list = [];
-
+    $todo_list['nid'] = $items->getParent()->id();
+    // Actually this might be ott: since you wouldn't be able to view it,
+    // nevertheless I have disabled the checkbox on the jsx if no access.
+    // Task says based on whether you can "view" parent node, not "update".
+    $todo_list['disabled'] = !(\Drupal::currentUser()->isAuthenticated() &&
+      $items->getParent()->access('view', \Drupal::currentUser())
+    );
     /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
     foreach ($items as $item) {
       /** @var \Drupal\paragraphs\ParagraphInterface $paragraph */
@@ -46,18 +52,10 @@ class TodoListFormatter extends FormatterBase {
       $completed = $paragraph->get('field_completed')->getString();
       // Get processed text value of a To-Do item label.
       $label = $paragraph->get('field_label')->first()->getValue();
-
-      $todo_list[] = [
-        'nid' => $paragraph->getParentEntity()->id(),
+      $todo_list['items'][] = [
         'id' => (int) $paragraph->id(),
         'completed' => (bool) $completed,
         'label' => !empty($label) ? check_markup($label['value'], $label['format']) : '',
-        // Actually this might be ott: since you wouldn't be able to view it,
-        // nevertheless I have disabled the checkbox on the jsx if no access.
-        // Task says based on whether you can "view" parent node, not "update".
-        'disabled' => !(\Drupal::currentUser()->isAuthenticated() &&
-          $paragraph->getParentEntity()->access('view', \Drupal::currentUser())
-        ),
       ];
     }
 
@@ -68,6 +66,7 @@ class TodoListFormatter extends FormatterBase {
         'id' => 'todo-list',
         'data-todo-list' => Json::encode($todo_list),
         'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE,
+        'data-nid' =>
       ],
       '#attached' => [
         'library' => ['systemseed_assessment/application'],
