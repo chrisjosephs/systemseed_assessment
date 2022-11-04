@@ -11,5 +11,3 @@ dependencies:
   - entity_reference_revisions:entity_reference_revisions
   - paragraphs:paragraphs
   - drupal:rest
-  - drupal:views
-  - drupal:basic_auth
