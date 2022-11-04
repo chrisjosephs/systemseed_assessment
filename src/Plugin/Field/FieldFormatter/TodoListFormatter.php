@@ -24,12 +24,12 @@ class TodoListFormatter extends FormatterBase {
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
     $todo_list = [];
-    $todo_list['nid'] = $items->getParent()->id();
+    $todo_list['nid'] = $items->getEntity()->id();
     // Actually this might be ott: since you wouldn't be able to view it,
     // nevertheless I have disabled the checkbox on the jsx if no access.
     // Task says based on whether you can "view" parent node, not "update".
     $todo_list['disabled'] = !(\Drupal::currentUser()->isAuthenticated() &&
-      $items->getParent()->access('view', \Drupal::currentUser())
+      $items->getEntity()->access('view', \Drupal::currentUser())
     );
     /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
     foreach ($items as $item) {
@@ -41,13 +41,11 @@ class TodoListFormatter extends FormatterBase {
       if (empty($paragraph) || $paragraph->bundle() !== 'to_do_item') {
         continue;
       }
-
       // Sanity check. Ensure that the paragraph bundle contains the expected
       // fields.
       if (!$paragraph->hasField('field_completed') || !$paragraph->hasField('field_label')) {
         continue;
       }
-
       // Get value of the completion state of a To-Do item.
       $completed = $paragraph->get('field_completed')->getString();
       // Get processed text value of a To-Do item label.
@@ -65,8 +63,7 @@ class TodoListFormatter extends FormatterBase {
       '#attributes' => [
         'id' => 'todo-list',
         'data-todo-list' => Json::encode($todo_list),
-        'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE,
-        'data-nid' =>
+        'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE
       ],
       '#attached' => [
         'library' => ['systemseed_assessment/application'],
