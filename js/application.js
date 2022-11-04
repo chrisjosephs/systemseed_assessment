@@ -17,7 +17,7 @@ const restApiPathToDoItem = '/api/todolist/';
 const Application = () => {
   // React hooks to handle the original state of To-Do List as well as to
   // manage changes of its state.
-  const [todoItems, setTodoItems] = useState(todoList);
+  const [todoItems, setTodoItems] = useState(todoList['items']);
   // React hooks to store XCSRF token
   const [csrfToken, setCsrfToken] = useState();
   // React hooks to check whether fetching (loading/saving)
@@ -27,23 +27,28 @@ const Application = () => {
   // before saved
   const [savingItem, setSavingItem] = useState([]);
 
+  useEffect(() => {
+    // call this again later if expired
+    getCsrf();
+  }, []);
   // get a REST Session Token asap. Also set "fetching" variable
   // so save can't be triggered until CSRF token is ready
-  useEffect(() => {
+  async function getCsrf() {
     setFetching(true);
-    const resp = fetch(restSessionTokenPath, {
+    const response = await fetch(restSessionTokenPath, {
       method: 'GET',
       mode: 'same-origin',
       cache: 'no-cache',
       credentials: 'same-origin',
-    }).then(response => response.text()).then(data => {
-      setCsrfToken(data);
-      setFetching(false);
     }).catch(e => {
       console.log(e);
     });
-  }, []);
-
+    response.text().then(function(text) {
+      setCsrfToken(
+        { token: text, expires: response.headers.get('expires') });
+      setFetching(false);
+    });
+  };
   // React to the change event of checkbox of a To-Do item.
   const onCheckboxChange = (event) => {
     // Get value of the paragraph ID from the triggered element.
@@ -68,9 +73,7 @@ const Application = () => {
   };
 
   const sendDrupal = (newTodoItem) => {
-    return new Promise(function (resolve, reject) {
-      setSavingItem(
-        (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
+    return new Promise(function(resolve, reject) {
       let json;
       // convert object to JSON string
       try {
@@ -85,6 +88,8 @@ const Application = () => {
 
       // send to API
       async function patchData(id) {
+        setSavingItem(
+          (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
         try {
           await fetch(restApiPathToDoItem + id, {
             method: 'PATCH',
@@ -93,10 +98,9 @@ const Application = () => {
             credentials: 'same-origin',
             headers: {
               'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken,
+              'X-CSRF-Token': csrfToken.token,
             },
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
+            referrerPolicy: 'strict-origin-when-cross-origin',
             body: json,
           }).then((response, reject) => {
             if (response.ok) {
@@ -104,26 +108,33 @@ const Application = () => {
               return (data);
             }
             else {
-              reject(Error(e));
+              response.text().then(function(text) {
+                if(text === ('X-CSRF-Token request header is missing' || 'X-CSRF-Token request header is invalid')){
+                  getCsrf().then(() => { patchData (id); });
+                }
+                else{
+                  Promise.reject(Error("Invalid Response"));
+                }
+              });
             }
           });
         }
         catch (e) {
           reject(Error(e));
         }
-        finally  {
+        finally {
           setSavingItem(
             (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
         }
       }
     });
-  }
+  };
   return (
     <div className="todo-list">
       { // I added authorisation check though not mandatory
         !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able to
           save changes...</h3> : ''}
-      {todoList.map(item => {
+      {todoList.items.map(item => {
         return (
           <div className="todo-list__item" key={item.id}>
             <input
