@@ -86,7 +86,7 @@ const Application = () => {
       // send to API
       async function patchData(id) {
         try {
-          await fetch(restApiPathToDoItem + newTodoItem['id'], {
+          await fetch(restApiPathToDoItem + id, {
             method: 'PATCH',
             mode: 'same-origin',
             cache: 'no-cache',
@@ -98,8 +98,14 @@ const Application = () => {
             redirect: 'follow',
             referrerPolicy: 'no-referrer',
             body: json,
-          }).then(response => response.json()).then(data => {
-            return (data);
+          }).then((response, reject) => {
+            if (response.ok) {
+              let data = response.json();
+              return (data);
+            }
+            else {
+              reject(Error(e));
+            }
           });
         }
         catch (e) {
