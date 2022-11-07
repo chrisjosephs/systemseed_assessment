@@ -11,7 +11,7 @@ const authenticated = rootElement.dataset.authenticated === 'true';
 // Drupal rest session token path
 const restSessionTokenPath = '/session/token';
 // Drupal rest resource API path
-const restApiPathToDoItem = '/api/todolist/';
+const restApiPathToDoItem = '/api/todolist/' + todoList.node;
 
 // This is JSX Component for the whole To-Do List application.
 const Application = () => {
@@ -31,7 +31,7 @@ const Application = () => {
     // call this again later if expired
     getCsrf();
   }, []);
-  // get a REST Session Token asap. Also set "fetching" variable
+  // get a REST Session Token asap. Also set "fetching" var
   // so save can't be triggered until CSRF token is ready
   async function getCsrf() {
     setFetching(true);
@@ -85,47 +85,43 @@ const Application = () => {
       patchData(newTodoItem['id']).catch((e) => {
         reject(Error(e));
       });
-
       // send to API
       async function patchData(id) {
         setSavingItem(
           (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
-        try {
-          await fetch(restApiPathToDoItem + id, {
-            method: 'PATCH',
-            mode: 'same-origin',
-            cache: 'no-cache',
-            credentials: 'same-origin',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken.token,
-            },
-            referrerPolicy: 'strict-origin-when-cross-origin',
-            body: json,
-          }).then((response, reject) => {
-            if (response.ok) {
-              let data = response.json();
-              return (data);
+        fetch(restApiPathToDoItem + id, {
+          method: 'PATCH',
+          mode: 'same-origin',
+          cache: 'no-cache',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken.token,
+          },
+          referrerPolicy: 'strict-origin-when-cross-origin',
+          body: json,
+        }).then((response, reject) => {
+          if (response.ok) {
+            let data = response.json();
+            return (data);
+          }
+          return Promise.reject(response);
+        }).catch((response) => {
+          console.log("error rejected");
+          response.text().then((text) => {
+            if (text === ('X-CSRF-Token request header is missing' ||
+              'X-CSRF-Token request header is invalid')) {
+              getCsrf().then(() => { patchData(id); });
             }
             else {
-              response.text().then(function(text) {
-                if(text === ('X-CSRF-Token request header is missing' || 'X-CSRF-Token request header is invalid')){
-                  getCsrf().then(() => { patchData (id); });
-                }
-                else{
-                  Promise.reject(Error("Invalid Response"));
-                }
-              });
+              reject(Error("Invalid Response"));
             }
           });
-        }
-        catch (e) {
-          reject(Error(e));
-        }
-        finally {
+        }).
+          finally(()=> {
           setSavingItem(
             (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
-        }
+        })
       }
     });
   };
