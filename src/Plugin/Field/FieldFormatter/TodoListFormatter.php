@@ -5,6 +5,7 @@ namespace Drupal\systemseed_assessment\Plugin\Field\FieldFormatter;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem;
 
 /**
  * Plugin implementation of the 'ToDo List' formatter.
@@ -31,7 +32,7 @@ class TodoListFormatter extends FormatterBase {
     $todo_list['disabled'] = !(\Drupal::currentUser()->isAuthenticated() &&
       $items->getEntity()->access('view', \Drupal::currentUser())
     );
-    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
+    /** @var EntityReferenceRevisionsItem $item */
     foreach ($items as $item) {
       /** @var \Drupal\paragraphs\ParagraphInterface $paragraph */
       $paragraph = $item->entity;

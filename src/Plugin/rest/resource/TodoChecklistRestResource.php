@@ -16,14 +16,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Provides a resource to get view modes by entity and bundle.
  *
  * @RestResource(
- *   id = "todo_list_rest_resource",
+ *   id = "todo_checklist_rest_resource",
  *   label = @Translation("Todo list rest resource"),
  *   uri_paths = {
- *     "canonical" = "/api/todolist/{entity}"
+ *     "canonical" = "/api/todo_checklist/{nid}"
  *   }
  * )
  */
-class TodoListRestResource extends ResourceBase {
+class TodoChecklistRestResource extends ResourceBase {
 
   /**
    * A current user instance.
@@ -62,7 +62,13 @@ class TodoListRestResource extends ResourceBase {
       catch (\JsonException $exception) {
         return new ModifiedResourceResponse($exception->getMessage(), 400);
       }
-      $node = Node::load($array['nid']);
+      // validate node type is a todo_checklist
+      $node_type = "todo_checklist";
+      $nid = \Drupal::routeMatch()->getParameters()->get('nid');
+      $node = Node::load($nid);
+      if($node->getType() !== $node_type){
+        throw Exception("Node should be of EntityType %et but found %it", ['%et' => $node_type, '%it' => $node->getEntityType()]);
+      }
       // Permission to modify state of To-Do items (not the node!) should
       // be given only to the users who have access to view the checklist.
       if (!($node->access('view', $this->currentUser))) {
@@ -87,15 +93,17 @@ class TodoListRestResource extends ResourceBase {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function updateTodoItem($todoItem) {
+    $entity_type = "to_do_item";
     $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
+    if($todoItemParagraph->getType() !== $entity_type){
+      throw Exception("Entity should be of EntityType %et but found %it", ['%et' => $entity_type, '%it' => $todoItemParagraph->getEntityType()]);
+    }
     $todoItemParagraph->set('field_completed', $todoItem['completed'] ? '1' : '0');
     $todoItemParagraph->save();
     // This might be far too verbose IRL, but added for completeness:
     $this->logger->notice('Updated todoItem with ID %id.', ['%id' => $todoItem['id']]);
     \Drupal::service('cache_tags.invalidator')
       ->invalidateTags(['paragraph:' . $todoItem['id']]);
-    \Drupal::service('cache_tags.invalidator')
-      ->invalidateTags(['node:' . $todoItem['nid']]);
   }
 
   /**

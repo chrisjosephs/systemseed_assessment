@@ -11,7 +11,7 @@ const authenticated = rootElement.dataset.authenticated === 'true';
 // Drupal rest session token path
 const restSessionTokenPath = '/session/token';
 // Drupal rest resource API path
-const restApiPathToDoItem = '/api/todolist/' + todoList.node;
+const restApiPathToDoChecklist = '/api/todo_checklist/' + todoList['nid'];
 
 // This is JSX Component for the whole To-Do List application.
 const Application = () => {
@@ -65,7 +65,7 @@ const Application = () => {
     // on same item, therefore can also do single items in parallel if user
     // wishes
     sendDrupal(newTodoItems[itemIndex]).catch((e) => {
-      // roll back if save fails
+      // revert checkbox change if save fails
       let newTodoItems = [...todoItems];
       newTodoItems[itemIndex].completed = !event.target.checked;
       setTodoItems(newTodoItems);
@@ -89,7 +89,7 @@ const Application = () => {
       async function patchData(id) {
         setSavingItem(
           (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
-        fetch(restApiPathToDoItem + id, {
+        fetch(restApiPathToDoChecklist, {
           method: 'PATCH',
           mode: 'same-origin',
           cache: 'no-cache',
