@@ -1,5 +1,5 @@
-id: todolist
-plugin_id: todo_list_rest_resource
+id: todo_checklist
+plugin_id: todo_checklist_rest_resource
 granularity: method
 configuration:
   PATCH:
