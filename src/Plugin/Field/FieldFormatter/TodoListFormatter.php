@@ -3,9 +3,8 @@
 namespace Drupal\systemseed_assessment\Plugin\Field\FieldFormatter;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem;
+use Drupal\Core\Field\FormatterBase;
 
 /**
  * Plugin implementation of the 'ToDo List' formatter.
@@ -24,15 +23,15 @@ class TodoListFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
+    $cache_tags = ['node:' . $items->getEntity()->id()];
     $todo_list = [];
     $todo_list['nid'] = $items->getEntity()->id();
-    // Actually this might be ott: since you wouldn't be able to view it,
-    // nevertheless I have disabled the checkbox on the jsx if no access.
+    // I have additionally disabled the checkbox on the jsx if no access.
     // Task says based on whether you can "view" parent node, not "update".
     $todo_list['disabled'] = !(\Drupal::currentUser()->isAuthenticated() &&
       $items->getEntity()->access('view', \Drupal::currentUser())
     );
-    /** @var EntityReferenceRevisionsItem $item */
+    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
     foreach ($items as $item) {
       /** @var \Drupal\paragraphs\ParagraphInterface $paragraph */
       $paragraph = $item->entity;
@@ -56,6 +55,7 @@ class TodoListFormatter extends FormatterBase {
         'completed' => (bool) $completed,
         'label' => !empty($label) ? check_markup($label['value'], $label['format']) : '',
       ];
+      $cache_tags[] = 'paragraph:' . $paragraph->id();
     }
 
     return [
@@ -64,10 +64,14 @@ class TodoListFormatter extends FormatterBase {
       '#attributes' => [
         'id' => 'todo-list',
         'data-todo-list' => Json::encode($todo_list),
-        'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE
+        'data-authenticated' => \Drupal::currentUser()->isAuthenticated() ? 'true' : FALSE,
       ],
       '#attached' => [
         'library' => ['systemseed_assessment/application'],
+      ],
+      '#cache' => [
+        'tags' => $cache_tags,
+        'max-age' => -1,
       ],
     ];
   }

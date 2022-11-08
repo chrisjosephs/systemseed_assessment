@@ -28,11 +28,11 @@ const Application = () => {
   const [savingItem, setSavingItem] = useState([]);
 
   useEffect(() => {
-    // call this again later if expired
-    getCsrf();
+    // Get Csrf early. can get it again later if expires.
+    getCsrf().then();
   }, []);
-  // get a REST Session Token asap. Also set "fetching" var
-  // so save can't be triggered until CSRF token is ready
+  // Get a REST Session Token asap. Also set "fetching" var
+  // so save can't be triggered until CSRF token is ready.
   async function getCsrf() {
     setFetching(true);
     const response = await fetch(restSessionTokenPath, {
@@ -45,7 +45,7 @@ const Application = () => {
     });
     response.text().then(function(text) {
       setCsrfToken(
-        { token: text, expires: response.headers.get('expires') });
+        {token: text, expires: response.headers.get('expires')});
       setFetching(false);
     });
   };
@@ -63,9 +63,9 @@ const Application = () => {
     setTodoItems(newTodoItems);
     // Send To-Do *item* update to Drupal API. Have avoided race conditions
     // on same item, therefore can also do single items in parallel if user
-    // wishes
+    // wishes.
     sendDrupal(newTodoItems[itemIndex]).catch((e) => {
-      // revert checkbox change if save fails
+      // Revert checkbox change if save fails.
       let newTodoItems = [...todoItems];
       newTodoItems[itemIndex].completed = !event.target.checked;
       setTodoItems(newTodoItems);
@@ -75,7 +75,6 @@ const Application = () => {
   const sendDrupal = (newTodoItem) => {
     return new Promise(function(resolve, reject) {
       let json;
-      // convert object to JSON string
       try {
         json = JSON.stringify(newTodoItem);
       }
@@ -85,7 +84,8 @@ const Application = () => {
       patchData(newTodoItem['id']).catch((e) => {
         reject(Error(e));
       });
-      // send to API
+
+      // Send to API.
       async function patchData(id) {
         setSavingItem(
           (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
@@ -100,17 +100,17 @@ const Application = () => {
           },
           referrerPolicy: 'strict-origin-when-cross-origin',
           body: json,
-        }).then((response, reject) => {
+        }).then((response) => {
           if (response.ok) {
             let data = response.json();
             return (data);
           }
           return Promise.reject(response);
         }).catch((response) => {
-          console.log("error rejected");
-          response.text().then((text) => {
-            if (text === ('X-CSRF-Token request header is missing' ||
-              'X-CSRF-Token request header is invalid')) {
+          response.json().then((json) => {
+            if (json.message &&
+              json.message === ('X-CSRF-Token request header is missing' ||
+                'X-CSRF-Token request header is invalid')) {
               getCsrf().then(() => { patchData(id); });
             }
             else {
@@ -118,16 +118,16 @@ const Application = () => {
             }
           });
         }).
-          finally(()=> {
-          setSavingItem(
-            (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
-        })
+          finally(() => {
+            setSavingItem(
+              (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
+          });
       }
     });
   };
   return (
     <div className="todo-list">
-      { // I added authorisation check though not mandatory
+      { // I added authorisation check to frontend - extra feature.
         !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able to
           save changes...</h3> : ''}
       {todoList.items.map(item => {
@@ -142,13 +142,13 @@ const Application = () => {
               checked={todoItems.find(
                 todoItem => todoItem.id === item.id).completed}
               onChange={onCheckboxChange}
-              // You can't save any item whilst still fetching session token
-              // And can't call another save of same item while save PATCH/POST
+              // You can't save any item whilst still fetching session token.
+              // You can't call another save of same item while save fetch.
               // Also "permission to modify state of To-Do items (not the
               // node!) should be given only to the users who have access to
-              // view the checklist."
+              // view the checklist".
               disabled={(fetching !== false) ||
-                (savingItem[item.id] === true) || item.disabled === true}
+                (savingItem[item.id] === true) || todoList['disabled'] === true}
             />
             <label
               htmlFor={"item-" + item.id}

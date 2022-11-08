@@ -62,12 +62,16 @@ class TodoChecklistRestResource extends ResourceBase {
       catch (\JsonException $exception) {
         return new ModifiedResourceResponse($exception->getMessage(), 400);
       }
-      // validate node type is a todo_checklist
+      // Validate node type is a todo_checklist.
       $node_type = "todo_checklist";
       $nid = \Drupal::routeMatch()->getParameters()->get('nid');
       $node = Node::load($nid);
-      if($node->getType() !== $node_type){
-        throw Exception("Node should be of EntityType %et but found %it", ['%et' => $node_type, '%it' => $node->getEntityType()]);
+      if ($node->getType() !== $node_type) {
+        throw Exception("Node should be of EntityType %et but found %it",
+          [
+            '%et' => $node_type,
+            '%it' => $node->getEntityType(),
+          ]);
       }
       // Permission to modify state of To-Do items (not the node!) should
       // be given only to the users who have access to view the checklist.
@@ -95,13 +99,21 @@ class TodoChecklistRestResource extends ResourceBase {
   public function updateTodoItem($todoItem) {
     $entity_type = "to_do_item";
     $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
-    if($todoItemParagraph->getType() !== $entity_type){
-      throw Exception("Entity should be of EntityType %et but found %it", ['%et' => $entity_type, '%it' => $todoItemParagraph->getEntityType()]);
+    if ($todoItemParagraph->getType() !== $entity_type) {
+      throw Exception("Entity should be of EntityType %et but found %it",
+        [
+          '%et' => $entity_type,
+          '%it' => $todoItemParagraph->getEntityType(),
+        ]);
     }
     $todoItemParagraph->set('field_completed', $todoItem['completed'] ? '1' : '0');
     $todoItemParagraph->save();
     // This might be far too verbose IRL, but added for completeness:
-    $this->logger->notice('Updated todoItem with ID %id.', ['%id' => $todoItem['id']]);
+    $this->logger->notice('User %u, updated todoItem with ID %id.',
+      [
+        '%u' => $this->currentUser->id(),
+        '%id' => $todoItem['id'],
+      ]);
     \Drupal::service('cache_tags.invalidator')
       ->invalidateTags(['paragraph:' . $todoItem['id']]);
   }
@@ -110,7 +122,21 @@ class TodoChecklistRestResource extends ResourceBase {
    * {@inheritDoc}
    */
   public function permissions(): array {
-    return [];
+    $permissions = [];
+    $definition = $this
+      ->getPluginDefinition();
+    foreach ($this
+      ->availableMethods() as $method) {
+      $lowered_method = strtolower($method);
+      $permissions["restful {$lowered_method} {$this->pluginId}"] = [
+        'title' => $this
+          ->t('Access @method on %label resource', [
+            '@method' => $method,
+            '%label' => $definition['label'],
+          ]),
+      ];
+    }
+    return $permissions;
   }
 
 }
