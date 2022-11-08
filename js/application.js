@@ -33,9 +33,9 @@ const Application = () => {
     }, []);
     // Get a REST Session Token asap. Also set "fetching" var
     // so save can't be triggered until CSRF token is ready.
-    const getCsrf = async () =>  {
+    async function getCsrf() {
       setFetching(true);
-      const response = fetch(restSessionTokenPath, {
+      const response = await fetch(restSessionTokenPath, {
         method: 'GET',
         mode: 'same-origin',
         cache: 'no-cache',
@@ -135,8 +135,7 @@ const Application = () => {
       <div className="todo-list">
         { // I added authorisation check to frontend - extra feature.
           !authenticated ? <h3><a href={"/user/login"}>Log in</a> to be able
-            to
-            save changes...</h3> : ''}
+            to save changes...</h3> : ''}
         {todoList.items.map(item => {
           return (
             <div className="todo-list__item" key={item.id}>
