@@ -1,0 +1,8 @@
+<?php
+
+function systemseed_assessment_entity_type_alter(array &$entity_types)
+{
+  if ($entity_types['paragraph']) {
+    $entity_types['paragraph']->setAccessClass('Drupal\systemseed_assessment\Access\ToDoItemAccessControlHandler');
+  }
+}

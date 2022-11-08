@@ -71,6 +71,12 @@ collaborator I can add, so you will have to ask me with a github Username if you
 
 Ran code sniffer. And circle ci test.
 
+composer require --dev dealerdirect/phpcodesniffer-composer-installer && \
+composer require --dev phpspec/prophecy-phpunit:^2
+
+.\vendor\bin\phpcs --config-set installed_paths C:\Users\xis23\AppData\Roaming\Composer\vendor\drupal\coder\coder_sniffer,C:\Users\xis23\AppData\Roaming\Composer\vendor\slevomat\coding-standard
+.\vendor\bin\phpcs --standard=Drupal --ignore=node_modules,vendor,dist,js web\modules\contrib\systemseed_assessment\
+
 <h2>Observations:</h2>
 
 The todo list label does not have a character cap (therefore tested one item with something like 4000 chars just to see

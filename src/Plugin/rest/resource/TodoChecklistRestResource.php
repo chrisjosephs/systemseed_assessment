@@ -73,13 +73,8 @@ class TodoChecklistRestResource extends ResourceBase {
             '%it' => $node->getEntityType(),
           ]);
       }
-      // Permission to modify state of To-Do items (not the node!) should
-      // be given only to the users who have access to view the checklist.
-      if (!($node->access('view', $this->currentUser))) {
-        return new ResourceResponse("User does not have access to view the checklist", 403);
-      }
       try {
-        $this->updateTodoItem($array);
+        return($this->updateTodoItem($array));
       }
       catch (InvalidPluginDefinitionException | PluginNotFoundException | EntityStorageException $e) {
         $this->logger->error($e->getMessage());
@@ -99,6 +94,12 @@ class TodoChecklistRestResource extends ResourceBase {
   public function updateTodoItem($todoItem) {
     $entity_type = "to_do_item";
     $todoItemParagraph = \Drupal::entityTypeManager()->getStorage('paragraph')->load($todoItem['id']);
+    // Permission to modify state of To-Do items (not the node!) should
+    // be given only to the users who have access to view the checklist.
+    // see \Drupal\systemseed_assessment\Access\ToDoItemAccessControlHandler.
+    if (!$todoItemParagraph->access('update', $this->currentUser)) {
+      return new ResourceResponse("User does not have access to view the checklist", 403);
+    }
     if ($todoItemParagraph->getType() !== $entity_type) {
       throw Exception("Entity should be of EntityType %et but found %it",
         [
@@ -116,6 +117,7 @@ class TodoChecklistRestResource extends ResourceBase {
       ]);
     \Drupal::service('cache_tags.invalidator')
       ->invalidateTags(['paragraph:' . $todoItem['id']]);
+    return new ModifiedResourceResponse("Success", 200);
   }
 
   /**

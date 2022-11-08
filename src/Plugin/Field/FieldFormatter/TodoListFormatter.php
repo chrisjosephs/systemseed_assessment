@@ -31,9 +31,7 @@ class TodoListFormatter extends FormatterBase {
     $todo_list['disabled'] = !(\Drupal::currentUser()->isAuthenticated() &&
       $items->getEntity()->access('view', \Drupal::currentUser())
     );
-    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
     foreach ($items as $item) {
-      /** @var \Drupal\paragraphs\ParagraphInterface $paragraph */
       $paragraph = $item->entity;
       // Ensure the paragraph entity exists and the bundle is the one we
       // expect. Normally the widget should throw warning for other bundles,
