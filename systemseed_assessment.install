@@ -6,7 +6,7 @@
  */
 
 function systemseed_assessment_uninstall() {
-  // Delete old config
+  // Delete old config.
   \Drupal::configFactory()->getEditable('core.entity_form_display.node.todo_checklist.default')->delete();
   \Drupal::configFactory()->getEditable('core.entity_form_display.paragraph.to_do_item.default')->delete();
   \Drupal::configFactory()->getEditable('core.entity_view_display.node.todo_checklist.default')->delete();
@@ -21,4 +21,10 @@ function systemseed_assessment_uninstall() {
   \Drupal::configFactory()->getEditable('node.type.todo_checklist')->delete();
   \Drupal::configFactory()->getEditable('paragraphs.paragraphs_type.to_do_item')->delete();
   \Drupal::configFactory()->getEditable('rest.resource.todolist')->delete();
+}
+function systemseed_assessment_install()
+{
+  $role = \Drupal\user\Entity\Role::load('authenticated');
+  $role->grantPermission('restful patch todo_checklist_rest_resource');
+  $role->save();
 }
