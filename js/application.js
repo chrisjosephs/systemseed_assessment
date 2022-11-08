@@ -33,9 +33,9 @@ const Application = () => {
     }, []);
     // Get a REST Session Token asap. Also set "fetching" var
     // so save can't be triggered until CSRF token is ready.
-    async function getCsrf() {
+    const getCsrf = async () =>  {
       setFetching(true);
-      const response = await fetch(restSessionTokenPath, {
+      const response = fetch(restSessionTokenPath, {
         method: 'GET',
         mode: 'same-origin',
         cache: 'no-cache',
@@ -43,7 +43,7 @@ const Application = () => {
       }).catch(e => {
         console.log(e);
       });
-      response.text().then(function(text) {
+      response.text().then((text) => {
         setCsrfToken(
           {token: text, expires: response.headers.get('expires')});
         setFetching(false);
@@ -74,7 +74,7 @@ const Application = () => {
     };
 
     const sendDrupal = (newTodoItem) => {
-      return new Promise(function(resolve, reject) {
+      return new Promise((resolve, reject) => {
           let json;
           try {
             json = JSON.stringify(newTodoItem);
@@ -82,12 +82,8 @@ const Application = () => {
           catch (e) {
             reject(Error(e));
           }
-          patchData(newTodoItem['id']).catch((e) => {
-            reject(Error(e));
-          });
-
           // Send to API.
-          async function patchData(id) {
+          const patchData = async (id) => {
             setSavingItem(
               (savingItem) => ({...savingItem, [newTodoItem['id']]: true}));
             fetch(restApiPathToDoChecklist, {
@@ -128,6 +124,9 @@ const Application = () => {
                   (savingItem) => ({...savingItem, [newTodoItem['id']]: false}));
               });
           }
+          patchData(newTodoItem['id']).catch((e) => {
+            reject(Error(e));
+          });
         },
       );
     };
